@@ -30,12 +30,14 @@ model Company {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   name      String
+  normalizedName String @map("normalized_name")
   website   String?
   createdAt DateTime @default(now()) @map("created_at")
 
   user         User          @relation(fields: [userId], references: [id])
   applications Application[]
 
+  @@unique([userId, normalizedName])
   @@map("companies")
 }
 
