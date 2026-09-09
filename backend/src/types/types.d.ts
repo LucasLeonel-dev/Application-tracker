@@ -8,7 +8,7 @@ declare module "fastify" {
 
 declare module "@fastify/jwt"{
     interface FastifyJWT {
-        user: {sub: string}, // o que request.user vai conter
-        payload: { sub: string};// o que vai em app.jwt.sign(
+        user: {sub: string}, // o que request.user vai conter - (string)
+        payload: { sub: string};// o que vai em app.jwt.sign() - (string)
     }
 }
