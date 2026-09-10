@@ -1,6 +1,5 @@
 import fp from "fastify-plugin";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { request } from "node:http";
 
 export default fp(async function authMiddleware(app:FastifyInstance) { //injetando decorador em app, mas o fastify nao sabe disso, ent quando eu usar ele em outro arq como pre handler vai acusar erro de tipagem ("Property 'authenticate' does not exist on type 'FastifyInstance")
     app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) =>{

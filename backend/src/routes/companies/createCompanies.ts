@@ -1,7 +1,7 @@
 import {z} from "zod"; //zod me poupa do trabalho de criar types na mao e validacao de dados do body 
-import {prisma} from "../lib/prisma.js";
-import { Prisma } from "../../generated/prisma/index.js";
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
+import {prisma} from "../../lib/prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
+import { FastifyInstance } from "fastify";
 import { normalizeCompanyName } from "./normalizeCompanyName.js";
 
 const companiesBodySchema = z.object({
@@ -9,12 +9,13 @@ const companiesBodySchema = z.object({
     website: z.string().optional(),
 })
 
-export default async function createCompanies(app:FastifyInstance, opts: FastifyPluginOptions){
+export default async function createCompanies(app:FastifyInstance){
     app.post('/companies', async (request, reply)=> {
-        const {name, website} = companiesBodySchema.parse(request.body);
+    const {name, website} = companiesBodySchema.parse(request.body);
+    const {sub: userId} = request.user;
 
     const normalizedName = normalizeCompanyName(name); 
-    const existingCompanie = await prisma.company.findUnique({where: {normalizedName}})
+    const existingCompanie = await prisma.company.findUnique({where: {normalizedName}}) //esta dando erro pq n atualizei o prisma
     if (existingCompanie){
         return reply.status(409).send({message: "Compania já existente!"});
     }
