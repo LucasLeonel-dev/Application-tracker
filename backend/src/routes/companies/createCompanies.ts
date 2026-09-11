@@ -10,22 +10,19 @@ const companiesBodySchema = z.object({
 })
 
 export default async function createCompanies(app:FastifyInstance){
-    app.post('/companies', async (request, reply)=> {
+    app.post('/companies', {preHandler: [app.authenticate]}, async (request, reply)=> {
     const {name, website} = companiesBodySchema.parse(request.body);
     const {sub: userId} = request.user;
 
     const normalizedName = normalizeCompanyName(name); 
-    const existingCompanie = await prisma.company.findUnique({where: {normalizedName}}) //esta dando erro pq n atualizei o prisma
-    if (existingCompanie){
-        return reply.status(409).send({message: "Compania já existente!"});
-    }
+
     try{
         const company = await prisma.company.create({
             data: {userId, name, normalizedName, website},
         })
         return reply.status(201).send(company)
     } catch(error){
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"){
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002"){ //mesmo caso do handler global, substitui o erro do prisma ou p2002{tambem erro do prisma}, pela messagem ai  
             return reply.status(409).send({ message: "Empresa já cadastrada" });
         }
          throw error;
