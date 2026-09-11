@@ -7,10 +7,6 @@ export default async function deleteCompany(app: FastifyInstance){
         const {sub: userId} = request.user;
         const {id} = request.params as {id: string};
 
-        try {
-            
-        } catch (error) {
-            
-        }
+        
     })
 } 

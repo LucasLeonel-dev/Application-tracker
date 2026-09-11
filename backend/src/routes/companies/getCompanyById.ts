@@ -2,12 +2,16 @@ import {prisma} from "../../lib/prisma.js";
 import { FastifyInstance } from "fastify";
 
 export default async function getCompanyById (app:FastifyInstance){
-    app.get('/companies', {preHandler: [app.authenticate]}, async (request, reply) => {
+    app.get('/companies/:id', {preHandler: [app.authenticate]}, async (request, reply) => {
         const {sub: userId} = request.user;
         const { id } = request.params as {id: string};
-        
+
+        if(!id || id.trim() === ""){
+            return reply.status(400).send({ message: "Informe uma compania válida" });
+        }
+
         const company = await prisma.company.findFirst({
-            where: { id,userId}
+            where: { id , userId}
         })
 
         if(!company){
