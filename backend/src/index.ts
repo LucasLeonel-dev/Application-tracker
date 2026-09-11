@@ -5,11 +5,13 @@ import path from "node:path";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import jwtPlugin from "./plugins/jwt.js";
+import authMiddleware from "./middleware/auth.js";
 
 const app = fastify();
 app.register(cors, {origin: "*"});
 
 app.register(jwtPlugin);
+app.register(authMiddleware);
 
 app.register(autoload, {
     dir:path.join(import.meta.dirname, "routes"),
