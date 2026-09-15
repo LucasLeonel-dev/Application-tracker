@@ -1,7 +1,7 @@
 import {z} from "zod"; //zod me poupa do trabalho de criar types na mao e validacao de dados do body 
 import {prisma} from "../lib/prisma.js";
 import bcrypt from "bcrypt"; 
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
+import { FastifyInstance } from "fastify";
 
 const emailSchema = z.email();
 
@@ -17,7 +17,7 @@ const loginBodySchema = z.object({
     password: z.string().min(1),
 })
 
-export default async function authRoutes(app: FastifyInstance, opts: FastifyPluginOptions) {//parametro "app" puxa app= fastiy() do index
+export default async function authRoutes(app: FastifyInstance) {//parametro "app" puxa app= fastiy() do index
     app.post('/register', async (request, reply) => {
         const {name, email, password} = registerBodySchema.parse(request.body);
 
