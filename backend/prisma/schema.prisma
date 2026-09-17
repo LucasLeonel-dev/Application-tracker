@@ -14,7 +14,7 @@ datasource db {
 }
 
 model User {
-  userid           String   @id @default(uuid())
+  id           String   @id @default(uuid())
   name         String
   email        String   @unique
   passwordHash String   @map("password_hash")
@@ -63,5 +63,6 @@ model Application {
   user    User    @relation(fields: [userId], references: [id])
   company Company @relation(fields: [companyId], references: [id])
 
+  @@unique([userId, companyId, roleTitle])
   @@map("applications")
 }
