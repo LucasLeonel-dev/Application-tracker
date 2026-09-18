@@ -2,7 +2,7 @@ import {z} from "zod"; //zod me poupa do trabalho de criar types na mao e valida
 import {prisma} from "../../lib/prisma.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { FastifyInstance } from "fastify";
-import { normalizeCompanyName } from "./normalizeCompanyName.js";
+import { normalizeCompanyName } from "../../modules/normalizeCompanyName.js";
 
 const companiesBodySchema = z.object({
     name: z.string().min(1),

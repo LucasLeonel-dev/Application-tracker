@@ -31,6 +31,7 @@ app.register(authMiddleware);
 
 app.register(autoload, {
     dir:path.join(import.meta.dirname, "routes"),
+    dirNameRoutePrefix: false, //sem isso o nome da pasta vira prefixo e a rota fica /applications/applications
     routeParams: true
 });
 
