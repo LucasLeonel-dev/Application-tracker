@@ -1,4 +1,6 @@
-import { promises } from "node:dns";
+//imports so pra transformar o arquivo em modulo e "abrir" as interfaces das libs (module augmentation)
+import "fastify";
+import "@fastify/jwt";
 
 declare module "fastify" {
     interface FastifyInstance{

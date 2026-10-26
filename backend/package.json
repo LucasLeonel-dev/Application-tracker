@@ -1,10 +1,10 @@
 {
   "name": "backend",
-  "main": ".build/index.js",
+  "main": "build/server.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch ./src/index.ts",
-    "start": "node build/index.js"
+    "dev": "tsx watch ./src/server.ts",
+    "start": "node build/server.js"
   },
   "keywords": [],
   "author": "",
