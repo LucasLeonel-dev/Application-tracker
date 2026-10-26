@@ -2,9 +2,26 @@ import {prisma} from "../../lib/prisma.js";
 import { FastifyInstance } from "fastify";
 import { idParamsSchema } from "../../schemas/common.js";
 import { isForeignKeyViolation, isRecordNotFound } from "../../utils/prismaErrors.js";
+import { toJsonSchema } from "../../utils/toJsonSchema.js";
+import { errorResponse, unauthorizedResponse, validationErrorResponse } from "../../schemas/responses.js";
 
 export default async function deleteCompany(app: FastifyInstance){
-    app.delete('/companies/:id', {preHandler: [app.authenticate]}, async(request, reply)=>{
+    app.delete('/companies/:id', {
+        preHandler: [app.authenticate],
+        schema: {
+            tags: ["Companies"],
+            summary: "Remove uma empresa sem candidaturas vinculadas",
+            security: [{ bearerAuth: [] }],
+            params: toJsonSchema(idParamsSchema),
+            response: {
+                204: { description: "Empresa removida", type: "null" },
+                400: validationErrorResponse,
+                401: unauthorizedResponse,
+                404: errorResponse("Empresa não encontrada"),
+                409: errorResponse("Existem candidaturas vinculadas a esta empresa"),
+            },
+        },
+    }, async(request, reply)=>{
         const {sub: userId} = request.user;
         const {id} = idParamsSchema.parse(request.params);
 

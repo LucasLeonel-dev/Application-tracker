@@ -2,9 +2,26 @@ import { FastifyInstance } from "fastify";
 import {prisma} from "../../lib/prisma.js";
 import { createApplicationSchema } from "../../schemas/applications.js";
 import { isUniqueViolation } from "../../utils/prismaErrors.js";
+import { toJsonSchema } from "../../utils/toJsonSchema.js";
+import { applicationResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from "../../schemas/responses.js";
 
 export default async function createApplication(app:FastifyInstance) {
-    app.post('/applications', {preHandler: [app.authenticate]}, async (request, reply)=>{
+    app.post('/applications', {
+        preHandler: [app.authenticate],
+        schema: {
+            tags: ["Applications"],
+            summary: "Cria uma candidatura para uma empresa do usuário",
+            security: [{ bearerAuth: [] }],
+            body: toJsonSchema(createApplicationSchema),
+            response: {
+                201: { description: "Candidatura criada", ...applicationResponse },
+                400: validationErrorResponse,
+                401: unauthorizedResponse,
+                404: errorResponse("Empresa não encontrada"),
+                409: errorResponse("Candidatura já cadastrada para essa vaga"),
+            },
+        },
+    }, async (request, reply)=>{
         const {companyId, roleTitle, status, appliedAt, notes} = createApplicationSchema.parse(request.body);
 
         const {sub: userId} = request.user;

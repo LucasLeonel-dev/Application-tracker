@@ -3,9 +3,27 @@ import {prisma} from "../../lib/prisma.js";
 import { idParamsSchema } from "../../schemas/common.js";
 import { updateApplicationSchema } from "../../schemas/applications.js";
 import { isUniqueViolation } from "../../utils/prismaErrors.js";
+import { toJsonSchema } from "../../utils/toJsonSchema.js";
+import { applicationResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from "../../schemas/responses.js";
 
 export default async function updateApplication(app:FastifyInstance) {
-    app.patch('/applications/:id', {preHandler: [app.authenticate]}, async (request, reply)=> {
+    app.patch('/applications/:id', {
+        preHandler: [app.authenticate],
+        schema: {
+            tags: ["Applications"],
+            summary: "Edita parcialmente uma candidatura (notes null apaga a anotação)",
+            security: [{ bearerAuth: [] }],
+            params: toJsonSchema(idParamsSchema),
+            body: toJsonSchema(updateApplicationSchema),
+            response: {
+                200: { description: "Candidatura atualizada", ...applicationResponse },
+                400: validationErrorResponse,
+                401: unauthorizedResponse,
+                404: errorResponse("Candidatura não encontrada"),
+                409: errorResponse("Candidatura já cadastrada para essa vaga"),
+            },
+        },
+    }, async (request, reply)=> {
         const {sub: userId} = request.user;
         const {id} = idParamsSchema.parse(request.params);
 
