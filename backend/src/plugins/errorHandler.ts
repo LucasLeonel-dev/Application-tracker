@@ -15,6 +15,12 @@ export default fp(async function errorHandler(app: FastifyInstance) {
             });
         }
 
+        //erros do proprio Fastify (JSON malformado, content-type invalido, body grande demais) ja trazem statusCode 4xx: sao culpa do cliente, nao 500
+        const statusCode = (error as { statusCode?: unknown }).statusCode;
+        if (typeof statusCode === "number" && statusCode >= 400 && statusCode < 500) {
+            return reply.status(statusCode).send({ message: "Requisição inválida" });
+        }
+
         request.log.error(error);
         return reply.status(500).send({ message: "Erro interno no servidor" }); //lida com erros internos(prisma, bug...)
     });
