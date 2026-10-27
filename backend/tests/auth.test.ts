@@ -1,5 +1,6 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { FastifyInstance } from "fastify";
+import bcrypt from "bcrypt";
 import { createTestApp, createUserAndLogin, prisma, resetDb, STRONG_PASSWORD } from "./helpers.js";
 
 describe("auth", () => {
@@ -89,6 +90,18 @@ describe("auth", () => {
 
             expect(res.statusCode).toBe(401);
             expect(res.json()).toEqual({ message: "Credenciais inválidas" });
+        });
+
+        it("email inexistente tambem passa pelo bcrypt (mesmo tempo de resposta, nao revela se o email existe)", async () => {
+            //medir tempo deixaria o teste instavel: o que garante o tempo parecido e o bcrypt.compare rodar nos dois caminhos
+            const compare = vi.spyOn(bcrypt, "compare");
+            try {
+                await app.inject({ method: "POST", url: "/login", payload: { email: "ninguem@teste.com", password: user.password } });
+
+                expect(compare).toHaveBeenCalledTimes(1);
+            } finally {
+                compare.mockRestore();
+            }
         });
     });
 
