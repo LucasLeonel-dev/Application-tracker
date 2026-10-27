@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { FastifyInstance } from "fastify";
-import { createTestApp, prisma, resetDb, STRONG_PASSWORD } from "./helpers.js";
+import { createTestApp, createUserAndLogin, prisma, resetDb, STRONG_PASSWORD } from "./helpers.js";
 
 describe("auth", () => {
     let app: FastifyInstance;
@@ -112,6 +112,17 @@ describe("auth", () => {
             const res = await app.inject({ method: "GET", url: "/companies", headers: { authorization: `Bearer ${header}.${payload}.assinaturafalsa` } });
 
             expect(res.statusCode).toBe(401);
+        });
+
+        it("token valido de um usuario que nao existe mais da 401", async () => {
+            const { email, headers } = await createUserAndLogin(app);
+            await prisma.user.delete({ where: { email } }); //o token continua assinado e dentro da validade
+
+            const list = await app.inject({ method: "GET", url: "/companies", headers });
+            const create = await app.inject({ method: "POST", url: "/companies", headers, payload: { name: "Google" } }); //antes: FK violada -> 500
+
+            expect([list.statusCode, create.statusCode]).toEqual([401, 401]);
+            expect(create.json()).toEqual({ message: "Token inválido ou ausente" });
         });
 
         it("token expirado da 401", async () => {
