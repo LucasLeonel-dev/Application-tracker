@@ -26,6 +26,7 @@ export default async function updateApplication(app:FastifyInstance) {
     }, async (request, reply)=> {
         const {sub: userId} = request.user;
         const {id} = idParamsSchema.parse(request.params);
+        const data = updateApplicationSchema.parse(request.body); //valida o body antes de consultar o banco: body invalido da 400 mesmo com id inexistente
 
         const existing = await prisma.application.findFirst({
             where: {userId, id}
@@ -34,8 +35,6 @@ export default async function updateApplication(app:FastifyInstance) {
         if(!existing){
             return reply.status(404).send({message: "Candidatura não encontrada"});
         }
-
-        const data = updateApplicationSchema.parse(request.body);
 
         try {
             const application = await prisma.application.update({
