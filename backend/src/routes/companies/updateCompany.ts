@@ -4,9 +4,27 @@ import { idParamsSchema } from "../../schemas/common.js";
 import { updateCompanySchema } from "../../schemas/companies.js";
 import { normalizeCompanyName } from "../../utils/normalizeCompanyName.js";
 import { isRecordNotFound, isUniqueViolation } from "../../utils/prismaErrors.js";
+import { toJsonSchema } from "../../utils/toJsonSchema.js";
+import { companyResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from "../../schemas/responses.js";
 
 export default async function updateCompany(app: FastifyInstance){
-    app.put('/companies/:id', {preHandler: [app.authenticate]}, async(request, reply)=>{
+    app.put('/companies/:id', {
+        preHandler: [app.authenticate],
+        schema: {
+            tags: ["Companies"],
+            summary: "Substitui os dados de uma empresa (website ausente ou null apaga o valor)",
+            security: [{ bearerAuth: [] }],
+            params: toJsonSchema(idParamsSchema),
+            body: toJsonSchema(updateCompanySchema),
+            response: {
+                200: { description: "Empresa atualizada", ...companyResponse },
+                400: validationErrorResponse,
+                401: unauthorizedResponse,
+                404: errorResponse("Empresa não encontrada"),
+                409: errorResponse("Empresa já cadastrada"),
+            },
+        },
+    }, async(request, reply)=>{
         const {sub: userId} = request.user;
         const {id} = idParamsSchema.parse(request.params);
         const {name, website} = updateCompanySchema.parse(request.body); //valida o body antes de consultar o banco: body invalido da 400 mesmo com id inexistente

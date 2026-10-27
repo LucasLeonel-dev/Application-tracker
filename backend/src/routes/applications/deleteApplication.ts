@@ -2,9 +2,25 @@ import { FastifyInstance } from "fastify";
 import {prisma} from "../../lib/prisma.js";
 import { idParamsSchema } from "../../schemas/common.js";
 import { isRecordNotFound } from "../../utils/prismaErrors.js";
+import { toJsonSchema } from "../../utils/toJsonSchema.js";
+import { errorResponse, unauthorizedResponse, validationErrorResponse } from "../../schemas/responses.js";
 
 export default async function deleteApplication(app:FastifyInstance) {
-    app.delete('/applications/:id', {preHandler: [app.authenticate]}, async (request, reply)=> {
+    app.delete('/applications/:id', {
+        preHandler: [app.authenticate],
+        schema: {
+            tags: ["Applications"],
+            summary: "Remove uma candidatura do usuário",
+            security: [{ bearerAuth: [] }],
+            params: toJsonSchema(idParamsSchema),
+            response: {
+                204: { description: "Candidatura removida", type: "null" },
+                400: validationErrorResponse,
+                401: unauthorizedResponse,
+                404: errorResponse("Candidatura não encontrada"),
+            },
+        },
+    }, async (request, reply)=> {
         const {sub: userId} = request.user;
         const {id} = idParamsSchema.parse(request.params);
 

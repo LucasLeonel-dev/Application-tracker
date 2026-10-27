@@ -1,9 +1,25 @@
 import { FastifyInstance } from "fastify";
 import {prisma} from "../../lib/prisma.js";
 import { idParamsSchema } from "../../schemas/common.js";
+import { toJsonSchema } from "../../utils/toJsonSchema.js";
+import { applicationResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from "../../schemas/responses.js";
 
 export default async function getApplicationById(app:FastifyInstance) {
-    app.get('/applications/:id', {preHandler: [app.authenticate]}, async (request, reply)=> {
+    app.get('/applications/:id', {
+        preHandler: [app.authenticate],
+        schema: {
+            tags: ["Applications"],
+            summary: "Detalha uma candidatura do usuário",
+            security: [{ bearerAuth: [] }],
+            params: toJsonSchema(idParamsSchema),
+            response: {
+                200: { description: "Candidatura encontrada", ...applicationResponse },
+                400: validationErrorResponse,
+                401: unauthorizedResponse,
+                404: errorResponse("Candidatura não encontrada"),
+            },
+        },
+    }, async (request, reply)=> {
         const {sub : userId} = request.user;
         const {id} = idParamsSchema.parse(request.params);
 
