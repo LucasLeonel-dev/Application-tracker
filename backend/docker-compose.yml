@@ -1,0 +1,25 @@
+#sobe o postgres do projeto: docker compose up -d (dentro de backend/)
+#as variaveis POSTGRES_* vem do .env e precisam bater com o DATABASE_URL
+services:
+  db:
+    image: postgres:16-alpine #nao trocar a versao major sem migrar o volume: o formato dos dados muda entre versoes
+    container_name: rastreador-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d:ro #scripts rodam so na primeira vez (volume vazio)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+    name: rastreador-pg-data #nome fixo: reaproveita o volume criado antes do compose
