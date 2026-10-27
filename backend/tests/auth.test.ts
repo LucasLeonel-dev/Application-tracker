@@ -106,10 +106,21 @@ describe("auth", () => {
             expect(res.statusCode).toBe(401);
         });
 
-        it("token assinado com outro segredo da 401", async () => {
-            //header.payload validos, assinatura falsa
+        it("token com assinatura adulterada da 401", async () => {
+            //header e payload validos, assinatura trocada: e o que acontece se alguem editar o sub do token na mao
             const [header, payload] = app.jwt.sign({ sub: "qualquer" }).split(".");
             const res = await app.inject({ method: "GET", url: "/companies", headers: { authorization: `Bearer ${header}.${payload}.assinaturafalsa` } });
+
+            expect(res.statusCode).toBe(401);
+        });
+
+        it("token expirado da 401", async () => {
+            //iat 2h atras + expiresIn 1h do .env.test = expirou ha 1h
+            const twoHoursAgo = Math.floor(Date.now() / 1000) - 2 * 60 * 60;
+            const token = app.jwt.sign({ sub: "qualquer", iat: twoHoursAgo });
+            expect(app.jwt.decode<{ exp: number }>(token)!.exp * 1000).toBeLessThan(Date.now()); //garante que o token montado ja nasceu vencido
+
+            const res = await app.inject({ method: "GET", url: "/companies", headers: { authorization: `Bearer ${token}` } });
 
             expect(res.statusCode).toBe(401);
         });

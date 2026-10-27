@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, LightMyRequestResponse } from "fastify";
 import { buildApp } from "../src/app.js";
 import { prisma } from "../src/lib/prisma.js";
 
@@ -20,23 +20,32 @@ export async function resetDb() {
     await prisma.user.deleteMany();
 }
 
+//se o preparo do teste falhar, para ali com a causa real
+//(sem isso um register quebrado viraria "Bearer undefined" e o erro apareceria como um 401 sem sentido la na frente)
+export function expectStatus(res: LightMyRequestResponse, expected: number, step: string) {
+    if (res.statusCode !== expected) {
+        throw new Error(`${step}: esperado ${expected}, veio ${res.statusCode} — ${res.body}`);
+    }
+    return res;
+}
+
 let userCounter = 0;
 
 //cria um usuario novo e devolve o header de autorizacao pronto pra usar no inject
 export async function createUserAndLogin(app: FastifyInstance) {
     const email = `user${++userCounter}@teste.com`;
 
-    await app.inject({
+    expectStatus(await app.inject({
         method: "POST",
         url: "/register",
         payload: { name: `User ${userCounter}`, email, password: STRONG_PASSWORD },
-    });
+    }), 201, "register no preparo");
 
-    const login = await app.inject({
+    const login = expectStatus(await app.inject({
         method: "POST",
         url: "/login",
         payload: { email, password: STRONG_PASSWORD },
-    });
+    }), 200, "login no preparo");
 
     const { token } = login.json<{ token: string }>();
     return { email, headers: { authorization: `Bearer ${token}` } };
@@ -44,5 +53,5 @@ export async function createUserAndLogin(app: FastifyInstance) {
 
 export async function createCompany(app: FastifyInstance, headers: Record<string, string>, name = "Google") {
     const res = await app.inject({ method: "POST", url: "/companies", headers, payload: { name } });
-    return res.json<{ id: string; name: string; normalizedName: string }>();
+    return expectStatus(res, 201, `criar empresa "${name}" no preparo`).json<{ id: string; name: string; normalizedName: string }>();
 }

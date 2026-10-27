@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { FastifyInstance } from "fastify";
-import { createCompany, createTestApp, createUserAndLogin, FAKE_UUID, prisma, resetDb } from "./helpers.js";
+import { createCompany, createTestApp, createUserAndLogin, expectStatus, FAKE_UUID, prisma, resetDb } from "./helpers.js";
 
 describe("companies", () => {
     let app: FastifyInstance;
@@ -57,8 +57,10 @@ describe("companies", () => {
 
     describe("GET /companies", () => {
         it("lista so as empresas do usuario, da mais recente para a mais antiga", async () => {
-            await createCompany(app, headers, "Primeira");
+            const first = await createCompany(app, headers, "Primeira");
             await createCompany(app, headers, "Segunda");
+            //created_at tem precisao de ms: duas criacoes seguidas podem empatar e a ordem ficaria aleatoria
+            await prisma.company.update({ where: { id: first.id }, data: { createdAt: new Date("2026-01-01") } });
             const other = await createUserAndLogin(app);
             await createCompany(app, other.headers, "De outro usuario");
 
@@ -100,10 +102,14 @@ describe("companies", () => {
             expect(res.json()).toMatchObject({ name: "Google Brasil", normalizedName: "GOOGLEBRASIL", website: "https://google.com.br" });
         });
 
-        it("website ausente apaga o valor atual", async () => {
+        it.each([
+            ["ausente", {}],
+            ["null", { website: null }],
+        ])("website %s apaga o valor atual", async (_, website) => {
             const created = await app.inject({ method: "POST", url: "/companies", headers, payload: { name: "Google", website: "https://google.com" } });
-            const res = await app.inject({ method: "PUT", url: `/companies/${created.json().id}`, headers, payload: { name: "Google" } });
+            const res = await app.inject({ method: "PUT", url: `/companies/${created.json().id}`, headers, payload: { name: "Google", ...website } });
 
+            expect(res.statusCode).toBe(200);
             expect(res.json().website).toBeNull();
         });
 
@@ -139,7 +145,10 @@ describe("companies", () => {
 
         it("empresa com candidaturas vinculadas da 409", async () => {
             const company = await createCompany(app, headers);
-            await app.inject({ method: "POST", url: "/applications", headers, payload: { companyId: company.id, roleTitle: "Dev", appliedAt: "2026-10-27" } });
+            expectStatus(
+                await app.inject({ method: "POST", url: "/applications", headers, payload: { companyId: company.id, roleTitle: "Dev", appliedAt: "2026-10-27" } }),
+                201, "criar candidatura no preparo",
+            );
 
             const res = await app.inject({ method: "DELETE", url: `/companies/${company.id}`, headers });
 

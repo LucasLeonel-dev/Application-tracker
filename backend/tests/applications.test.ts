@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { FastifyInstance } from "fastify";
-import { createCompany, createTestApp, createUserAndLogin, FAKE_UUID, prisma, resetDb } from "./helpers.js";
+import { createCompany, createTestApp, createUserAndLogin, expectStatus, FAKE_UUID, prisma, resetDb } from "./helpers.js";
 
 describe("applications", () => {
     let app: FastifyInstance;
@@ -16,7 +16,7 @@ describe("applications", () => {
 
     async function createApplication(overrides: Record<string, unknown> = {}) {
         const res = await app.inject({ method: "POST", url: "/applications", headers, payload: newApplication(overrides) });
-        return res.json<{ id: string; status: string; roleTitle: string }>();
+        return expectStatus(res, 201, "criar candidatura no preparo").json<{ id: string; status: string; roleTitle: string }>();
     }
 
     beforeAll(async () => {
@@ -99,6 +99,17 @@ describe("applications", () => {
             expect(await titles(`?companyId=${companyId}`)).toEqual(["A", "B"]);
             expect(await titles(`?companyId=${companyId}&status=applied`)).toEqual(["A"]);
             expect(await titles("?status=rejected")).toEqual([]);
+        });
+
+        it("ordena da mais recente para a mais antiga", async () => {
+            const old = await createApplication({ roleTitle: "Antiga" });
+            await createApplication({ roleTitle: "Nova" });
+            //created_at tem precisao de ms: forca a diferenca pra ordem nao depender da sorte
+            await prisma.application.update({ where: { id: old.id }, data: { createdAt: new Date("2026-01-01") } });
+
+            const res = await app.inject({ method: "GET", url: "/applications", headers });
+
+            expect(res.json().map((a: { roleTitle: string }) => a.roleTitle)).toEqual(["Nova", "Antiga"]);
         });
 
         it("status invalido no filtro da 400", async () => {
