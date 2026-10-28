@@ -57,3 +57,6 @@ export const validationErrorResponse = {
 } as const;
 
 export const unauthorizedResponse = errorResponse("Token inválido ou ausente");
+
+//429 do @fastify/rate-limit, montado pelo errorHandler
+export const tooManyRequestsResponse = errorResponse("Muitas tentativas, tente novamente em instantes");

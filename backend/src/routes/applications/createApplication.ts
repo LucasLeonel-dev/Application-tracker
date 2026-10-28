@@ -3,10 +3,12 @@ import {prisma} from "../../lib/prisma.js";
 import { createApplicationSchema } from "../../schemas/applications.js";
 import { isUniqueViolation } from "../../utils/prismaErrors.js";
 import { toJsonSchema } from "../../utils/toJsonSchema.js";
-import { applicationResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from "../../schemas/responses.js";
+import { applicationResponse, errorResponse, unauthorizedResponse, validationErrorResponse, tooManyRequestsResponse } from "../../schemas/responses.js";
+import { insertRateLimit } from "../../plugins/rateLimit.js";
 
 export default async function createApplication(app:FastifyInstance) {
     app.post('/applications', {
+        config: { rateLimit: insertRateLimit }, //30/min por IP: freia insercao em massa
         preHandler: [app.authenticate],
         schema: {
             tags: ["Applications"],
@@ -19,6 +21,7 @@ export default async function createApplication(app:FastifyInstance) {
                 401: unauthorizedResponse,
                 404: errorResponse("Empresa não encontrada"),
                 409: errorResponse("Candidatura já cadastrada para essa vaga"),
+                429: tooManyRequestsResponse,
             },
         },
     }, async (request, reply)=>{

@@ -6,9 +6,15 @@ import errorHandler from "./plugins/errorHandler.js";
 import jwtPlugin from "./plugins/jwt.js";
 import authenticate from "./plugins/authenticate.js";
 import swaggerPlugin from "./plugins/swagger.js";
+import rateLimitPlugin from "./plugins/rateLimit.js";
+
+type BuildAppOptions = {
+    //os testes de CRUD criam dezenas de usuarios no mesmo minuto pelo mesmo IP: desligam o limite (o rateLimit.test liga)
+    rateLimit?: boolean;
+};
 
 //so monta o app, sem dar listen: assim os testes podem usar app.inject() sem abrir porta
-export function buildApp() {
+export function buildApp({ rateLimit = true }: BuildAppOptions = {}) {
     const app = fastify();
 
     app.register(cors, {origin: "*"});
@@ -16,6 +22,9 @@ export function buildApp() {
     app.register(jwtPlugin);
     app.register(authenticate);
     app.register(swaggerPlugin); //antes do autoload
+    if (rateLimit) {
+        app.register(rateLimitPlugin); //antes do autoload: as rotas so ganham o limite se o plugin ja estiver registrado
+    }
 
     app.register(autoload, {
         dir:path.join(import.meta.dirname, "routes"),

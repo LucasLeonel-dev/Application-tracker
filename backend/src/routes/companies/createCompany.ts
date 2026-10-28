@@ -4,10 +4,12 @@ import { normalizeCompanyName } from "../../utils/normalizeCompanyName.js";
 import { createCompanySchema } from "../../schemas/companies.js";
 import { isUniqueViolation } from "../../utils/prismaErrors.js";
 import { toJsonSchema } from "../../utils/toJsonSchema.js";
-import { companyResponse, errorResponse, unauthorizedResponse, validationErrorResponse } from "../../schemas/responses.js";
+import { companyResponse, errorResponse, unauthorizedResponse, validationErrorResponse, tooManyRequestsResponse } from "../../schemas/responses.js";
+import { insertRateLimit } from "../../plugins/rateLimit.js";
 
 export default async function createCompany(app:FastifyInstance){
     app.post('/companies', {
+        config: { rateLimit: insertRateLimit }, //30/min por IP: freia insercao em massa
         preHandler: [app.authenticate],
         schema: {
             tags: ["Companies"],
@@ -19,6 +21,7 @@ export default async function createCompany(app:FastifyInstance){
                 400: validationErrorResponse,
                 401: unauthorizedResponse,
                 409: errorResponse("Empresa já cadastrada"),
+                429: tooManyRequestsResponse,
             },
         },
     }, async (request, reply)=> {
