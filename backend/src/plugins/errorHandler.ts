@@ -15,8 +15,14 @@ export default fp(async function errorHandler(app: FastifyInstance) {
             });
         }
 
-        //erros do proprio Fastify (JSON malformado, content-type invalido, body grande demais) ja trazem statusCode 4xx: sao culpa do cliente, nao 500
         const statusCode = (error as { statusCode?: unknown }).statusCode;
+
+        //lancado pelo @fastify/rate-limit; o header retry-after (segundos ate liberar) ja vem setado por ele
+        if (statusCode === 429) {
+            return reply.status(429).send({ message: "Muitas tentativas, tente novamente em instantes" });
+        }
+
+        //erros do proprio Fastify (JSON malformado, content-type invalido, body grande demais) ja trazem statusCode 4xx: sao culpa do cliente, nao 500
         if (typeof statusCode === "number" && statusCode >= 400 && statusCode < 500) {
             return reply.status(statusCode).send({ message: "Requisição inválida" });
         }

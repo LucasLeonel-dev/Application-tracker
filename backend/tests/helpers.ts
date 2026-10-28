@@ -7,8 +7,9 @@ export { prisma };
 export const FAKE_UUID = "00000000-0000-0000-0000-000000000000";
 export const STRONG_PASSWORD = "Senha@123";
 
-export async function createTestApp() {
-    const app = buildApp();
+//rate limit desligado por padrao: os testes de CRUD criam muitos usuarios pelo mesmo IP no mesmo minuto
+export async function createTestApp({ rateLimit = false } = {}) {
+    const app = buildApp({ rateLimit });
     await app.ready(); //espera todos os plugins e rotas carregarem
     return app;
 }
