@@ -141,7 +141,9 @@ describe("auth", () => {
         it("token expirado da 401", async () => {
             //iat 2h atras + expiresIn 1h do .env.test = expirou ha 1h
             const twoHoursAgo = Math.floor(Date.now() / 1000) - 2 * 60 * 60;
-            const token = app.jwt.sign({ sub: "qualquer", iat: twoHoursAgo });
+            //o payload e tipado como { sub } (types/fastify.d.ts); iat so faz sentido aqui no teste, por isso o cast
+            const expiredPayload = { sub: "qualquer", iat: twoHoursAgo };
+            const token = app.jwt.sign(expiredPayload as { sub: string });
             expect(app.jwt.decode<{ exp: number }>(token)!.exp * 1000).toBeLessThan(Date.now()); //garante que o token montado ja nasceu vencido
 
             const res = await app.inject({ method: "GET", url: "/companies", headers: { authorization: `Bearer ${token}` } });
