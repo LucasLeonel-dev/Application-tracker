@@ -5,6 +5,10 @@ import { loginBodySchema } from "../../schemas/auth.js";
 import { toJsonSchema } from "../../utils/toJsonSchema.js";
 import { errorResponse, validationErrorResponse } from "../../schemas/responses.js";
 
+//hash de uma senha qualquer, com o mesmo custo (10) do register: usado quando o email nao existe,
+//pra resposta demorar o mesmo que uma senha errada e o tempo nao denunciar quais emails estao cadastrados
+const DUMMY_HASH = bcrypt.hashSync("senha-que-ninguem-usa", 10);
+
 export default async function loginUser(app: FastifyInstance) {
     app.post("/login", {
         schema: {
@@ -26,13 +30,11 @@ export default async function loginUser(app: FastifyInstance) {
         const {email, password} = loginBodySchema.parse(request.body);
 
         const user = await prisma.user.findUnique({where: {email}});
-        if (!user){
-            return reply.status(401).send({message: "Credenciais inválidas"});
-        }
 
-        const validPassword = await bcrypt.compare(password, user.passwordHash);
+        //compara sempre, mesmo sem usuario: sem isso o email inexistente responderia bem mais rapido
+        const validPassword = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
 
-        if(!validPassword){
+        if(!user || !validPassword){
             return reply.status(401).send({message: "Credenciais inválidas"});
         }
 
