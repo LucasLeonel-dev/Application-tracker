@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { FastifyInstance } from "fastify";
 import bcrypt from "bcrypt";
 import { createTestApp, createUserAndLogin, prisma, resetDb, STRONG_PASSWORD } from "./helpers.js";
+import { env } from "../src/lib/env.js";
 
 describe("auth", () => {
     let app: FastifyInstance;
@@ -69,20 +70,32 @@ describe("auth", () => {
             await app.inject({ method: "POST", url: "/register", payload: user });
         });
 
-        it("credenciais corretas devolvem um JWT com o id do usuario no sub", async () => {
+        it("devolve os dados do usuario e NAO devolve o token no corpo", async () => {
             const res = await app.inject({ method: "POST", url: "/login", payload: { email: user.email, password: user.password } });
 
             expect(res.statusCode).toBe(200);
-            const { token } = res.json();
-            const saved = await prisma.user.findUniqueOrThrow({ where: { email: user.email } });
-            expect(app.jwt.decode<{ sub: string }>(token)?.sub).toBe(saved.id);
+            expect(res.json()).toEqual({ id: expect.any(String), name: user.name, email: user.email }); //sem token, sem passwordHash
         });
 
-        it("senha errada da 401", async () => {
+        it("grava o JWT num cookie httpOnly, sameSite lax, que expira junto com o token", async () => {
+            const res = await app.inject({ method: "POST", url: "/login", payload: { email: user.email, password: user.password } });
+            const cookie = res.cookies.find((c) => c.name === "token")!;
+
+            expect(cookie).toMatchObject({ httpOnly: true, sameSite: "Lax", path: "/" });
+            expect(cookie.secure).toBeFalsy(); //so em production (NODE_ENV dos testes nao e production)
+
+            const saved = await prisma.user.findUniqueOrThrow({ where: { email: user.email } });
+            const payload = app.jwt.decode<{ sub: string; exp: number }>(cookie.value)!;
+            expect(payload.sub).toBe(saved.id);
+            expect((cookie.expires as Date).getTime()).toBe(payload.exp * 1000);
+        });
+
+        it("senha errada da 401 e nao grava cookie", async () => {
             const res = await app.inject({ method: "POST", url: "/login", payload: { email: user.email, password: "Errada@123" } });
 
             expect(res.statusCode).toBe(401);
             expect(res.json()).toEqual({ message: "Credenciais inválidas" });
+            expect(res.cookies).toHaveLength(0);
         });
 
         it("email inexistente da 401 com a mesma mensagem (nao revela se o email existe)", async () => {
@@ -149,6 +162,64 @@ describe("auth", () => {
             const res = await app.inject({ method: "GET", url: "/companies", headers: { authorization: `Bearer ${token}` } });
 
             expect(res.statusCode).toBe(401);
+        });
+    });
+    describe("GET /me", () => {
+        it("com o cookie devolve o usuario logado", async () => {
+            const { email, headers } = await createUserAndLogin(app);
+            const res = await app.inject({ method: "GET", url: "/me", headers });
+
+            expect(res.statusCode).toBe(200);
+            expect(res.json()).toEqual({ id: expect.any(String), name: expect.any(String), email });
+        });
+
+        it("sem cookie da 401", async () => {
+            const res = await app.inject({ method: "GET", url: "/me" });
+
+            expect(res.statusCode).toBe(401);
+        });
+
+        it("header Authorization: Bearer continua funcionando (Insomnia, Postman)", async () => {
+            const { headers } = await createUserAndLogin(app);
+            const token = headers.cookie.replace("token=", "");
+            const res = await app.inject({ method: "GET", url: "/me", headers: { authorization: `Bearer ${token}` } });
+
+            expect(res.statusCode).toBe(200);
+        });
+    });
+
+    describe("POST /logout", () => {
+        it("apaga o cookie (mesmo nome e path do login)", async () => {
+            const { headers } = await createUserAndLogin(app);
+            const res = await app.inject({ method: "POST", url: "/logout", headers });
+
+            expect(res.statusCode).toBe(204);
+            const cleared = res.cookies.find((c) => c.name === "token")!;
+            expect(cleared.value).toBe("");
+            expect(cleared.path).toBe("/");
+            expect((cleared.expires as Date).getTime()).toBeLessThan(Date.now()); //data no passado = navegador descarta
+        });
+
+        it("funciona mesmo sem estar logado (sair nunca falha)", async () => {
+            const res = await app.inject({ method: "POST", url: "/logout" });
+
+            expect(res.statusCode).toBe(204);
+        });
+    });
+
+    describe("CORS", () => {
+        it("libera so a origem do frontend, com credenciais", async () => {
+            const res = await app.inject({ method: "GET", url: "/health", headers: { origin: env.FRONTEND_URL } });
+
+            expect(res.headers["access-control-allow-origin"]).toBe(env.FRONTEND_URL);
+            expect(res.headers["access-control-allow-credentials"]).toBe("true");
+        });
+
+        it("nao libera outra origem", async () => {
+            const res = await app.inject({ method: "GET", url: "/health", headers: { origin: "https://site-malicioso.com" } });
+
+            expect(res.headers["access-control-allow-origin"]).not.toBe("https://site-malicioso.com");
+            expect(res.headers["access-control-allow-origin"]).not.toBe("*");
         });
     });
 });

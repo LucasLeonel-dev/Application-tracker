@@ -6,6 +6,8 @@ const envSchema = z.object({
     DATABASE_URL: z.string().min(1),
     JWT_SECRET: z.string().min(32, "JWT_SECRET precisa ter pelo menos 32 caracteres"),
     JWT_EXPIRES_IN: z.string().min(1).default("1d"), //sem isso o token nunca expiraria
+    NODE_ENV: z.enum(["development", "production", "test"]).default("development"), //em production o cookie so trafega por HTTPS (secure)
+    FRONTEND_URL: z.url().default("http://localhost:5173"), //unica origem que o CORS libera (com cookie, "*" nao funciona)
 });
 
 export const env = envSchema.parse(process.env);

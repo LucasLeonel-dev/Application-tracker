@@ -48,8 +48,16 @@ export async function createUserAndLogin(app: FastifyInstance) {
         payload: { email, password: STRONG_PASSWORD },
     }), 200, "login no preparo");
 
-    const { token } = login.json<{ token: string }>();
-    return { email, headers: { authorization: `Bearer ${token}` } };
+    return { email, headers: authCookieHeader(login) };
+}
+
+//faz o papel do navegador: pega o cookie que o login gravou e devolve pronto pra reenviar
+export function authCookieHeader(loginResponse: LightMyRequestResponse) {
+    const cookie = loginResponse.cookies.find((c) => c.name === "token");
+    if (!cookie) {
+        throw new Error(`login nao gravou o cookie "token" — ${loginResponse.body}`);
+    }
+    return { cookie: `token=${cookie.value}` };
 }
 
 export async function createCompany(app: FastifyInstance, headers: Record<string, string>, name = "Google") {

@@ -10,7 +10,7 @@ export default async function listApplications(app:FastifyInstance) {
         schema: {
             tags: ["Applications"],
             summary: "Lista as candidaturas do usuário, com filtro opcional por status e empresa",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             querystring: toJsonSchema(listApplicationsQuerySchema),
             response: {
                 200: { description: "Candidaturas, da mais recente para a mais antiga", ...applicationListResponse },

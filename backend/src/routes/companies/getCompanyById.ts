@@ -10,7 +10,7 @@ export default async function getCompanyById (app:FastifyInstance){
         schema: {
             tags: ["Companies"],
             summary: "Detalha uma empresa do usuário",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             params: toJsonSchema(idParamsSchema),
             response: {
                 200: { description: "Empresa encontrada", ...companyResponse },

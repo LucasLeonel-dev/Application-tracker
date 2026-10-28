@@ -11,7 +11,7 @@ export default async function deleteCompany(app: FastifyInstance){
         schema: {
             tags: ["Companies"],
             summary: "Remove uma empresa sem candidaturas vinculadas",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             params: toJsonSchema(idParamsSchema),
             response: {
                 204: { description: "Empresa removida", type: "null" },

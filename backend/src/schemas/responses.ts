@@ -25,6 +25,14 @@ const applicationResponseSchema = z.object({
     company: companyResponseSchema, //todas as rotas de applications usam include: { company: true }
 });
 
+//dados publicos do usuario (register, login, /me): nunca o passwordHash
+const userResponseSchema = z.object({
+    id: z.uuid(),
+    name: z.string(),
+    email: z.email(),
+});
+
+export const userResponse = toJsonSchema(userResponseSchema, "output");
 export const companyResponse = toJsonSchema(companyResponseSchema, "output");
 export const companyListResponse = { type: "array", items: companyResponse } as const;
 export const applicationResponse = toJsonSchema(applicationResponseSchema, "output");
