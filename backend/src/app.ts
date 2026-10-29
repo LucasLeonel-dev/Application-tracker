@@ -7,6 +7,7 @@ import jwtPlugin from "./plugins/jwt.js";
 import authenticate from "./plugins/authenticate.js";
 import swaggerPlugin from "./plugins/swagger.js";
 import rateLimitPlugin from "./plugins/rateLimit.js";
+import { env } from "./lib/env.js";
 
 type BuildAppOptions = {
     //os testes de CRUD criam dezenas de usuarios no mesmo minuto pelo mesmo IP: desligam o limite (o rateLimit.test liga)
@@ -17,7 +18,8 @@ type BuildAppOptions = {
 export function buildApp({ rateLimit = true }: BuildAppOptions = {}) {
     const app = fastify();
 
-    app.register(cors, {origin: "*"});
+    //com cookie o navegador exige uma origem exata + credentials (com "*" ele recusa a resposta)
+    app.register(cors, {origin: env.FRONTEND_URL, credentials: true});
     app.register(errorHandler);
     app.register(jwtPlugin);
     app.register(authenticate);

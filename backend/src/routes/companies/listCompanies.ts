@@ -8,7 +8,7 @@ export default async function listCompanies(app:FastifyInstance) {
         schema: {
             tags: ["Companies"],
             summary: "Lista as empresas do usuário",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             response: {
                 200: { description: "Empresas, da mais recente para a mais antiga", ...companyListResponse },
                 401: unauthorizedResponse,

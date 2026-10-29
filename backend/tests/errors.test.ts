@@ -45,15 +45,20 @@ describe("infra e error handler", () => {
         expect(body.issues.map((i: { path: string }) => i.path)).toEqual(expect.arrayContaining(["email", "password"]));
     });
 
-    it("/docs/json documenta as 12 operacoes com tag, resumo e respostas", async () => {
+    it("/docs/json documenta as 14 operacoes com tag, resumo e respostas", async () => {
         const res = await app.inject({ method: "GET", url: "/docs/json" });
-        const ops = Object.values(res.json().paths).flatMap((methods) => Object.values(methods as object));
+        const ops = Object.entries(res.json().paths).flatMap(([path, methods]) =>
+            Object.entries(methods as object).map(([method, op]) => ({ route: `${method.toUpperCase()} ${path}`, ...op })),
+        );
 
-        expect(ops).toHaveLength(12);
+        //rotas sem caso de erro: documentam so a resposta de sucesso
+        const successOnly = ["POST /logout"];
+
+        expect(ops).toHaveLength(14);
         for (const op of ops) {
-            expect(op.tags.length).toBeGreaterThan(0);
-            expect(op.summary).toBeTruthy();
-            expect(Object.keys(op.responses).length).toBeGreaterThanOrEqual(2);
+            expect(op.tags.length, op.route).toBeGreaterThan(0);
+            expect(op.summary, op.route).toBeTruthy();
+            expect(Object.keys(op.responses).length, op.route).toBeGreaterThanOrEqual(successOnly.includes(op.route) ? 1 : 2);
         }
     });
 });

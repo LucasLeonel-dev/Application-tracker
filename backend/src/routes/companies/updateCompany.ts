@@ -13,7 +13,7 @@ export default async function updateCompany(app: FastifyInstance){
         schema: {
             tags: ["Companies"],
             summary: "Substitui os dados de uma empresa (website ausente ou null apaga o valor)",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             params: toJsonSchema(idParamsSchema),
             body: toJsonSchema(updateCompanySchema),
             response: {

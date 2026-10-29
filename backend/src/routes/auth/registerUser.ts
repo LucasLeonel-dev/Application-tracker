@@ -4,7 +4,7 @@ import { FastifyInstance } from "fastify";
 import { registerBodySchema } from "../../schemas/auth.js";
 import { isUniqueViolation } from "../../utils/prismaErrors.js";
 import { toJsonSchema } from "../../utils/toJsonSchema.js";
-import { errorResponse, validationErrorResponse, tooManyRequestsResponse } from "../../schemas/responses.js";
+import { errorResponse, validationErrorResponse, tooManyRequestsResponse, userResponse } from "../../schemas/responses.js";
 import { authRateLimit } from "../../plugins/rateLimit.js";
 
 export default async function registerUser(app: FastifyInstance) {//parametro "app" puxa app= fastiy() do app.ts
@@ -15,12 +15,7 @@ export default async function registerUser(app: FastifyInstance) {//parametro "a
             summary: "Cria um usuário",
             body: toJsonSchema(registerBodySchema),
             response: {
-                201: {
-                    description: "Usuário criado",
-                    type: "object",
-                    properties: { id: { type: "string", format: "uuid" }, name: { type: "string" }, email: { type: "string", format: "email" } },
-                    required: ["id", "name", "email"],
-                },
+                201: { description: "Usuário criado (não faz login: chame POST /login em seguida)", ...userResponse },
                 400: validationErrorResponse,
                 409: errorResponse("Email já cadastrado"),
                 429: tooManyRequestsResponse,

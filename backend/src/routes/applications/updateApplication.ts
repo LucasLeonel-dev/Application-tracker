@@ -12,7 +12,7 @@ export default async function updateApplication(app:FastifyInstance) {
         schema: {
             tags: ["Applications"],
             summary: "Edita parcialmente uma candidatura (notes null apaga a anotação)",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             params: toJsonSchema(idParamsSchema),
             body: toJsonSchema(updateApplicationSchema),
             response: {

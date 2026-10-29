@@ -13,7 +13,7 @@ export default async function createApplication(app:FastifyInstance) {
         schema: {
             tags: ["Applications"],
             summary: "Cria uma candidatura para uma empresa do usuário",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             body: toJsonSchema(createApplicationSchema),
             response: {
                 201: { description: "Candidatura criada", ...applicationResponse },

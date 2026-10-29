@@ -14,7 +14,7 @@ export default async function createCompany(app:FastifyInstance){
         schema: {
             tags: ["Companies"],
             summary: "Cria uma empresa",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             body: toJsonSchema(createCompanySchema),
             response: {
                 201: { description: "Empresa criada", ...companyResponse },

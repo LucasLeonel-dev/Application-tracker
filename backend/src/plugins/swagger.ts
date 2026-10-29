@@ -23,7 +23,9 @@ export default fp(async function swaggerPlugin(app: FastifyInstance) {
             ],
             components: {
                 securitySchemes: {
-                    bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" }, //botao "Authorize" do /docs
+                    //o /docs roda na mesma origem da API: depois do POST /login aqui mesmo, o navegador ja manda o cookie sozinho
+                    cookieAuth: { type: "apiKey", in: "cookie", name: "token" },
+                    bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" }, //alternativa pra clientes fora do navegador (Insomnia, Postman)
                 },
             },
         }

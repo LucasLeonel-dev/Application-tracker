@@ -11,7 +11,7 @@ export default async function deleteApplication(app:FastifyInstance) {
         schema: {
             tags: ["Applications"],
             summary: "Remove uma candidatura do usuário",
-            security: [{ bearerAuth: [] }],
+            security: [{ cookieAuth: [] }, { bearerAuth: [] }],
             params: toJsonSchema(idParamsSchema),
             response: {
                 204: { description: "Candidatura removida", type: "null" },
